@@ -10,7 +10,7 @@ export default {
     PORT: Number(Bun.env["PORT"]) || 8000,
     BASE_PATH: Bun.env["BASE_PATH"] || "api",
     DB_URI: Bun.env["DB_URI"],
-    ENCRYPTION_KEY: Bun.env["ENCRYPTION_KEY"] || "7nB3rrON3PrDR4y4s6liBNC4M4P562kg",
+    ENCRYPTION_KEY: Bun.env["ENCRYPTION_KEY"] || "",
     JWT_PRIVATE_KEY: Bun.env["JWT_PRIVATE_KEY"] ?? "",
     JWT_PUBLIC_KEY: Bun.env["JWT_PUBLIC_KEY"] ?? "",
     JWT_SECRET_KEY: Bun.env["JWT_SECRET_KEY"] || "Commandfailedwithexitcode3221225786"
