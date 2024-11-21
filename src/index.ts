@@ -1,9 +1,45 @@
 import { Elysia, t } from "elysia";
 import prom from "prom-client";
+import path from "path";
+import cors from "@elysiajs/cors";
 import ApiRouter from "./router";
 import env from "./env";
+import { dateFormatter } from "./utils/functions";
 
+let topic = "demo";
 const app = new Elysia({ normalize: true });
+app.use(cors())
+const ews = new Elysia().ws("/ws", {
+    open(ws) {
+        console.info(`${ws.remoteAddress} Open/Connect id=${ws.id} ${ws.data.request.method} ${ws.data.request.url}`);
+        const message = `${ws.id} has entered the chat`;
+        ws.subscribe(topic);
+        console.log(message);
+        ws.publish(topic, message);
+    },
+    message(ws, message) {
+        // const { id } = ws;
+        if (typeof message !== "string") message = JSON.stringify(message);
+        console.info(`${ws.remoteAddress} Message id=${ws.id} ${ws.data.request.method} ${ws.data.request.url} "${message}"`);
+        // ws.send({
+        //     id,
+        //     message: "success",
+        //     time: dateFormatter()
+        // });
+        // ws.send(message)
+        ws.publish(topic, `${message}`);
+    },
+    close(ws) {
+        console.info(`${ws.remoteAddress} Close/Disconnect id=${ws.id} ${ws.data.request.method} ${ws.data.request.url}`);
+        const message = `${ws.id} has left the chat`;
+        ws.unsubscribe(topic);
+        console.log(message);
+        ws.publish(topic, message);
+    },
+    error(e) {
+        console.error(e);
+    }
+});
 const register = new prom.Registry();
 register.setDefaultLabels({
     worker: env.SERVICE_NAME
@@ -13,30 +49,15 @@ prom.collectDefaultMetrics({
     register
 });
 
-app.onRequest(ctx => {
+app.onTransform(function ({ body, params, path, request, server }) {
     const requestId = crypto.randomUUID();
-    // ctx.set.headers["X-Request-Id"] = requestId;
-    // console.info(ctx.request);
-    const method = ctx.request.method,
-        url = ctx.request.url;
-    // body = await ctx.request.json();
-    // host = ctx.request.headers.get("host");
-    // console.info(ctx.server);
-    // console.info(ctx.server?.requestIP(ctx.request));
-    const reqIp = ctx.server?.requestIP(ctx.request),
+    const reqIp = server?.requestIP(request),
         ip = reqIp?.address;
-    console.info("Request", {
-        requestId,
-        url,
-        method,
-        ip
+    console.info(`[INFO] ${ip} Request ${requestId} ${request.method} ${path}`, {
+        body,
+        params
     });
 });
-
-// app.onAfterResponse(ctx => {
-//     // const requestId = ctx.request.headers.get("X-Request-Id");
-//     console.info("Response", ctx.response);
-// });
 
 app.get("/", () => ({
     status: "OK",
@@ -49,33 +70,31 @@ app.get("/metrics", async ctx => {
     return metrics;
 });
 
-app.post(
-    "/post-body",
-    ({ body }) => {
-        // const body = ctx.request.body;
-        return body;
-    },
-    {
-        body: t.Object({
-            fullname: t.String()
-        })
-    }
-);
-
 // app.use(jwt)
-app.use(ApiRouter).onError((ctx) => {
-    if (ctx.code == "NOT_FOUND") return "Route not found."
+app.use(ApiRouter).onError(ctx => {
+    if (ctx.code == "NOT_FOUND") return "Route not found.";
 });
 
-app.listen({
+app.get("/image/:name", ({ params: { name } }) => {
+    const filepath = path.resolve(`${env.PWD}/uploads/images/${name}`);
+    const f = Bun.file(filepath);
+    return f;
+});
+
+const server = app.listen({
     hostname: env.HOST,
     port: env.PORT,
     development: env.NODE_ENV == "development",
     maxRequestBodySize: 50 * 1024 * 1024
 });
 
+const wserver = ews.listen({
+    hostname: env.HOST,
+    port: env.PORT + 1
+});
+
 console.info(
-    `${new Date()} -- [INFO] REST API is running`,
+    `${dateFormatter()} -- [INFO] REST API is running`,
     JSON.stringify({
         hostname: app.server?.hostname,
         port: app.server?.port,
@@ -89,10 +108,12 @@ console.info(
 const signals: Array<NodeJS.Signals> = ["SIGINT", "SIGTERM", "SIGBREAK"];
 
 for (const signal of signals) {
-    process.on(signal, () => {
-        console.warn(`${signal} signal received.`);
-        console.warn(`Closing ${env.SERVICE_NAME} server...`);
-        console.warn(`${env.SERVICE_NAME} server is closed.`);
+    process.on(signal, async () => {
+        console.info(`${signal} signal received.`);
+        console.info(`Closing ${env.SERVICE_NAME} server...`);
+        await server.stop();
+        await wserver.stop();
+        console.info(`${env.SERVICE_NAME} server is closed.`);
         process.exit(0);
     });
 }

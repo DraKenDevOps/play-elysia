@@ -19,8 +19,7 @@
   },
   "packageManager": "pnpm@8.4.0+sha1.73c608c602d520c436c7b250330315d83ffcc1ee",
   "dependencies": {
-    "@elysiajs/cookie": "^0.8.0",
-    "@elysiajs/jwt": "^1.1.0",
+    "@elysiajs/cors": "^1.1.1",
     "dayjs": "^1.11.13",
     "elysia": "^1.1.11",
     "fs-extra": "^11.2.0",
