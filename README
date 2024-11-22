@@ -1,0 +1,6 @@
+*check out new branch (optional)
+git checkout -b 'whatever'
+
+1. bun i
+2. mkdir uploads
+3. create database demo.db
