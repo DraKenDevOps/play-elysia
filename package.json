@@ -17,7 +17,6 @@
   "peerDependencies": {
     "typescript": "^5.5.4"
   },
-  "packageManager": "pnpm@8.4.0+sha1.73c608c602d520c436c7b250330315d83ffcc1ee",
   "dependencies": {
     "@elysiajs/cors": "^1.1.1",
     "dayjs": "^1.11.13",
