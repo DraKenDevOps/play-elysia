@@ -11,10 +11,6 @@ const ENCRYPTION_KEY = Buffer.from(env.ENCRYPTION_KEY);
 const algorithm = "aes-256-cbc";
 const encode = "hex" as BufferEncoding;
 
-export function delay(ms: number) {
-    return new Promise(resolve => setTimeout(() => resolve(null), ms));
-}
-
 export function encryptText(text: string) {
     const iv = crypto.randomBytes(16);
     // @ts-ignore

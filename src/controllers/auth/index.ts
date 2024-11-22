@@ -4,17 +4,24 @@ import { findUserService } from "./services";
 
 export const loginController = new Elysia().post(
     "/login",
-    async ({ body }) => {
+    ({ body }) => {
         const username = body["username"];
         const password = body["password"];
-        const user = await findUserService(username);
-        if (!user) return { status: "error", message: "Not found" };
-        const _password = decryptText(user["password"]);
-
-        if (_password !== password) return { status: "error", message: "Password incorrect" };
+        const user = findUserService(username);
+        if (!user) return { status: "error", message: "User not found" };
+        if (user["status"] !== "ACTIVE") return { status: "error", message: `User '${username}' is unavailable` };
+        const text = decryptText(user["password"]);
+        if (text !== password) return { status: "error", message: "Invalid password" };
         return {
             status: "SUCCESS",
-            username
+            message: "Login success",
+            data: {
+                username,
+                user_id: user["user_id"],
+                token: crypto.randomUUID(),
+                email: user["email"],
+                role: user["role"]
+            }
         };
     },
     {

@@ -7,7 +7,7 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "compile": "bun build src/index.ts --minify --target bun --outdir ./dist",
-    "serve": "bun dist/index.js"
+    "serve": "pm2-runtime start pm2.config.js"
   },
   "devDependencies": {
     "@types/bun": "latest",

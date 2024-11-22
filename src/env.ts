@@ -13,5 +13,5 @@ export default {
     ENCRYPTION_KEY: Bun.env["ENCRYPTION_KEY"] || "",
     JWT_PRIVATE_KEY: Bun.env["JWT_PRIVATE_KEY"] ?? "",
     JWT_PUBLIC_KEY: Bun.env["JWT_PUBLIC_KEY"] ?? "",
-    JWT_SECRET_KEY: Bun.env["JWT_SECRET_KEY"] || "Commandfailedwithexitcode3221225786"
+    JWT_SECRET_KEY: Bun.env["JWT_SECRET_KEY"] || "CommandFailedWithExitCode"
 };

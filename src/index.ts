@@ -7,15 +7,16 @@ import env from "./env";
 import { dateFormatter } from "./utils/functions";
 
 let topic = "demo";
+const ignorePaths = ["metrics"];
 const app = new Elysia({ normalize: true });
-app.use(cors())
+app.use(cors());
 const ews = new Elysia().ws("/ws", {
     open(ws) {
         console.info(`${ws.remoteAddress} Open/Connect id=${ws.id} ${ws.data.request.method} ${ws.data.request.url}`);
-        const message = `${ws.id} has entered the chat`;
         ws.subscribe(topic);
-        console.log(message);
-        ws.publish(topic, message);
+        // const message = `${ws.id} has entered the chat`;
+        // console.info(message);
+        // ws.publish(topic, message);
     },
     message(ws, message) {
         // const { id } = ws;
@@ -27,14 +28,14 @@ const ews = new Elysia().ws("/ws", {
         //     time: dateFormatter()
         // });
         // ws.send(message)
-        ws.publish(topic, `${message}`);
+        if (message) ws.publish(topic, message);
     },
     close(ws) {
         console.info(`${ws.remoteAddress} Close/Disconnect id=${ws.id} ${ws.data.request.method} ${ws.data.request.url}`);
-        const message = `${ws.id} has left the chat`;
         ws.unsubscribe(topic);
-        console.log(message);
-        ws.publish(topic, message);
+        // const message = `${ws.id} has left the chat`;
+        // console.info(message);
+        // ws.publish(topic, message);
     },
     error(e) {
         console.error(e);
@@ -49,14 +50,27 @@ prom.collectDefaultMetrics({
     register
 });
 
-app.onTransform(function ({ body, params, path, request, server }) {
+app.onTransform(function ({ body, params, path, request, headers, server }) {
     const requestId = crypto.randomUUID();
-    const reqIp = server?.requestIP(request),
-        ip = reqIp?.address;
-    console.info(`[INFO] ${ip} Request ${requestId} ${request.method} ${path}`, {
-        body,
-        params
-    });
+    // @ts-ignore
+    global["requestId"] = requestId;
+    const reqIp = server?.requestIP(request);
+    let ip = headers["x-real-ip"] || headers["x-forwarded-for"] || reqIp?.address;
+    console.info(
+        `[INFO] ${ip} Request ${requestId} ${request.method} ${path}`,
+        JSON.stringify({
+            body,
+            params
+        })
+    );
+});
+app.onAfterResponse(function ({ path, request, response }) {
+    if (ignorePaths.some(igno => path.includes(igno))) return;
+    console.info(
+        // @ts-ignore
+        `[INFO] Response ${global["requestId"]} ${request.method} ${path}`,
+        JSON.stringify({ response })
+    );
 });
 
 app.get("/", () => ({

@@ -1,12 +1,17 @@
-import pg from "../../utils/pg";
+import sqlite from "../../libs/sqlite";
+import type { TQueryUser } from "../../types";
 
-export async function findUserService(username: string) {
+export function findUserService(username: string) {
+    const sql = "SELECT user_id, password, email, role, status FROM users WHERE username = $username";
     try {
-        const result = await pg.query("SELECT uuid, password FROM delta_test.users WHERE username = $1", [username]);
-        const [user] = result.rows;
-        return user as { password: string, uuid: string };
-    } catch (error) {
-        console.error(`[ERROR] Find user service`, error);
+        const stmt = sqlite.query(sql);
+        const [result] = stmt.all({
+            username
+        }) as unknown as Array<TQueryUser>;
+        stmt.finalize();
+        return result;
+    } catch (e) {
+        console.error(e);
         return null;
     }
 }
